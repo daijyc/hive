@@ -916,7 +916,6 @@ public class DummyRawStoreFailEvent implements RawStore, Configurable {
   @Override
   public Map<String, ColumnStatisticsObj> getAggrColStatsForTablePartitions(String dbName,
       String tableName) throws MetaException, NoSuchObjectException {
-    // TODO Auto-generated method stub
-    return null;
+    return objectStore.getAggrColStatsForTablePartitions(dbName, tableName);
   }
 }

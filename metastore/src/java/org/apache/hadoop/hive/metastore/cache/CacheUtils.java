@@ -32,28 +32,28 @@ import org.apache.hadoop.hive.metastore.cache.CachedStore.TableWrapper;
 import org.apache.hive.common.util.HiveStringUtils;
 
 public class CacheUtils {
-  private static final String delimit = "\t";
+  private static final String delimit = "\u0001";
 
   public static String buildKey(String dbName, String tableName) {
     return dbName + delimit + tableName;
   }
 
-  public static String buildKey(String dbName, String tableName, List<String> vals) {
+  public static String buildKey(String dbName, String tableName, List<String> partVals) {
     String key = buildKey(dbName, tableName);
-    if (vals == null || vals.size() == 0) {
+    if (partVals == null || partVals.size() == 0) {
       return key;
     }
-    for (int i=0;i<vals.size();i++) {
-      key+=vals.get(i);
-      if (i!=vals.size()-1) {
-        key+=delimit;
+    for (int i = 0; i < partVals.size(); i++) {
+      key += partVals.get(i);
+      if (i != partVals.size() - 1) {
+        key += delimit;
       }
     }
     return key;
   }
 
-  public static String buildKey(String dbName, String tableName, List<String> vals, String colName) {
-    String key = buildKey(dbName, tableName, vals);
+  public static String buildKey(String dbName, String tableName, List<String> partVals, String colName) {
+    String key = buildKey(dbName, tableName, partVals);
     return key + delimit + colName;
   }
 

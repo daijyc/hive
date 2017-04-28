@@ -19,6 +19,9 @@ package org.apache.hadoop.hive.metastore.cache;
 
 import java.util.Arrays;
 
+/**
+ * byte array with comparator
+ */
 public class ByteArrayWrapper {
   byte[] wrapped;
 
