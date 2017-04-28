@@ -896,9 +896,15 @@ public class HiveConf extends Configuration {
         "Default property values for newly created tables"),
     DDL_CTL_PARAMETERS_WHITELIST("hive.ddl.createtablelike.properties.whitelist", "",
         "Table Properties to copy over when executing a Create Table Like."),
-    METASTORE_RAW_STORE_IMPL("hive.metastore.rawstore.impl", "org.apache.hadoop.hive.metastore.ObjectStore",
+    METASTORE_RAW_STORE_IMPL("hive.metastore.rawstore.impl", "org.apache.hadoop.hive.metastore.cache.CachedStore",
         "Name of the class that implements org.apache.hadoop.hive.metastore.rawstore interface. \n" +
         "This class is used to store and retrieval of raw metadata objects such as table, database"),
+    METASTORE_CACHED_RAW_STORE_IMPL("hive.metastore.cached.rawstore.impl", "org.apache.hadoop.hive.metastore.ObjectStore",
+        "Name of the wrapped RawStore class"),
+    METASTORE_CACHED_RAW_STORE_CACHE_UPDATE_FREQUENCY(
+        "hive.metastore.cached.rawstore.cache.update.frequency", "30000ms", new TimeValidator(
+            TimeUnit.MILLISECONDS),
+        "The time after which metastore cache is updated from metastore DB."),
     METASTORE_TXN_STORE_IMPL("hive.metastore.txn.store.impl",
         "org.apache.hadoop.hive.metastore.txn.CompactionTxnHandler",
         "Name of class that implements org.apache.hadoop.hive.metastore.txn.TxnStore.  This " +
