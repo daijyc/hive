@@ -62,6 +62,7 @@ public class TestCachedStore {
     Database db2 = new Database();
     Database db3 = new Database();
     Database newDb1 = new Database();
+    newDb1.setName("db1");
 
     SharedCache.addDatabaseToCache("db1", db1);
     SharedCache.addDatabaseToCache("db2", db2);
@@ -122,6 +123,8 @@ public class TestCachedStore {
     tbl3.setPartitionKeys(new ArrayList<FieldSchema>());
 
     Table newTbl1 = new Table();
+    newTbl1.setDbName("db2");
+    newTbl1.setTableName("tbl1");
     StorageDescriptor newSd1 = new StorageDescriptor();
     List<FieldSchema> newCols1 = new ArrayList<FieldSchema>();
     newCols1.add(new FieldSchema("newcol1", "int", ""));
@@ -196,6 +199,8 @@ public class TestCachedStore {
     part3.setValues(Arrays.asList("201703"));
 
     Partition newPart1 = new Partition();
+    newPart1.setDbName("db1");
+    newPart1.setTableName("tbl1");
     StorageDescriptor newSd1 = new StorageDescriptor();
     List<FieldSchema> newCols1 = new ArrayList<FieldSchema>();
     newCols1.add(new FieldSchema("newcol1", "int", ""));
