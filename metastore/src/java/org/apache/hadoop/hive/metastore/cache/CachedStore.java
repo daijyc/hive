@@ -109,7 +109,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 public class CachedStore implements RawStore, Configurable {
   private static ScheduledExecutorService cacheUpdateMaster = null;
-  private static AtomicReference<Thread> runningMasterThread = null;
+  private static AtomicReference<Thread> runningMasterThread = new AtomicReference<Thread>(null);
   RawStore rawStore;
   Configuration conf;
   private PartitionExpressionProxy expressionProxy = null;
@@ -279,8 +279,6 @@ public class CachedStore implements RawStore, Configurable {
         }
       } catch (MetaException e) {
         LOG.error("Updating CachedStore: error getting database names", e);
-      } finally {
-        runningMasterThread.set(null);
       }
     }
 
@@ -341,12 +339,12 @@ public class CachedStore implements RawStore, Configurable {
     }
   }
 
-  private void waitForCacheUpdateMaster() {
+  // Interrupt the cache update background thread
+  // Fire and forget (the master will respond appropriately when it gets a chance)
+  // All writes to the cache go through synchronized methods, so fire & forget is fine.
+  private void interruptCacheUpdateMaster() {
     if (runningMasterThread.get() != null) {
       runningMasterThread.get().interrupt();
-      while (runningMasterThread.get() != null) {
-        ;
-      }
     }
   }
 
@@ -379,7 +377,7 @@ public class CachedStore implements RawStore, Configurable {
   public void createDatabase(Database db)
       throws InvalidObjectException, MetaException {
     rawStore.createDatabase(db);
-    waitForCacheUpdateMaster();
+    interruptCacheUpdateMaster();
     SharedCache.addDatabaseToCache(HiveStringUtils.normalizeIdentifier(db.getName()), db.deepCopy());
   }
 
@@ -396,7 +394,7 @@ public class CachedStore implements RawStore, Configurable {
   public boolean dropDatabase(String dbname) throws NoSuchObjectException, MetaException {
     boolean succ = rawStore.dropDatabase(dbname);
     if (succ) {
-      waitForCacheUpdateMaster();
+      interruptCacheUpdateMaster();
       SharedCache.removeDatabaseFromCache(HiveStringUtils.normalizeIdentifier(dbname));
     }
     return succ;
@@ -407,7 +405,7 @@ public class CachedStore implements RawStore, Configurable {
       throws NoSuchObjectException, MetaException {
     boolean succ = rawStore.alterDatabase(dbName, db);
     if (succ) {
-      waitForCacheUpdateMaster();
+      interruptCacheUpdateMaster();
       SharedCache.alterDatabaseInCache(HiveStringUtils.normalizeIdentifier(dbName), db);
     }
     return succ;
@@ -467,7 +465,7 @@ public class CachedStore implements RawStore, Configurable {
   public void createTable(Table tbl)
       throws InvalidObjectException, MetaException {
     rawStore.createTable(tbl);
-    waitForCacheUpdateMaster();
+    interruptCacheUpdateMaster();
     validateTableType(tbl);
     SharedCache.addTableToCache(HiveStringUtils.normalizeIdentifier(tbl.getDbName()),
         HiveStringUtils.normalizeIdentifier(tbl.getTableName()), tbl);
@@ -479,7 +477,7 @@ public class CachedStore implements RawStore, Configurable {
       InvalidInputException {
     boolean succ = rawStore.dropTable(dbName, tableName);
     if (succ) {
-      waitForCacheUpdateMaster();
+      interruptCacheUpdateMaster();
       SharedCache.removeTableFromCache(HiveStringUtils.normalizeIdentifier(dbName),
           HiveStringUtils.normalizeIdentifier(tableName));
     }
@@ -502,7 +500,7 @@ public class CachedStore implements RawStore, Configurable {
       throws InvalidObjectException, MetaException {
     boolean succ = rawStore.addPartition(part);
     if (succ) {
-      waitForCacheUpdateMaster();
+      interruptCacheUpdateMaster();
       SharedCache.addPartitionToCache(HiveStringUtils.normalizeIdentifier(part.getDbName()),
           HiveStringUtils.normalizeIdentifier(part.getTableName()), part);
     }
@@ -514,7 +512,7 @@ public class CachedStore implements RawStore, Configurable {
       List<Partition> parts) throws InvalidObjectException, MetaException {
     boolean succ = rawStore.addPartitions(dbName, tblName, parts);
     if (succ) {
-      waitForCacheUpdateMaster();
+      interruptCacheUpdateMaster();
       for (Partition part : parts) {
         SharedCache.addPartitionToCache(HiveStringUtils.normalizeIdentifier(dbName),
             HiveStringUtils.normalizeIdentifier(tblName), part);
@@ -529,7 +527,7 @@ public class CachedStore implements RawStore, Configurable {
       throws InvalidObjectException, MetaException {
     boolean succ = rawStore.addPartitions(dbName, tblName, partitionSpec, ifNotExists);
     if (succ) {
-      waitForCacheUpdateMaster();
+      interruptCacheUpdateMaster();
       PartitionSpecProxy.PartitionIterator iterator = partitionSpec.getPartitionIterator();
       while (iterator.hasNext()) {
         Partition part = iterator.next();
@@ -564,7 +562,7 @@ public class CachedStore implements RawStore, Configurable {
       InvalidObjectException, InvalidInputException {
     boolean succ = rawStore.dropPartition(dbName, tableName, part_vals);
     if (succ) {
-      waitForCacheUpdateMaster();
+      interruptCacheUpdateMaster();
       SharedCache.removePartitionFromCache(HiveStringUtils.normalizeIdentifier(dbName),
           HiveStringUtils.normalizeIdentifier(tableName), part_vals);
     }
@@ -588,7 +586,7 @@ public class CachedStore implements RawStore, Configurable {
   public void alterTable(String dbName, String tblName, Table newTable)
       throws InvalidObjectException, MetaException {
     rawStore.alterTable(dbName, tblName, newTable);
-    waitForCacheUpdateMaster();
+    interruptCacheUpdateMaster();
     validateTableType(newTable);
     SharedCache.alterTableInCache(HiveStringUtils.normalizeIdentifier(dbName),
         HiveStringUtils.normalizeIdentifier(tblName), newTable);
@@ -689,7 +687,7 @@ public class CachedStore implements RawStore, Configurable {
       List<String> partVals, Partition newPart)
       throws InvalidObjectException, MetaException {
     rawStore.alterPartition(dbName, tblName, partVals, newPart);
-    waitForCacheUpdateMaster();
+    interruptCacheUpdateMaster();
     SharedCache.alterPartitionInCache(HiveStringUtils.normalizeIdentifier(dbName),
         HiveStringUtils.normalizeIdentifier(tblName), partVals, newPart);
   }
@@ -699,7 +697,7 @@ public class CachedStore implements RawStore, Configurable {
       List<List<String>> partValsList, List<Partition> newParts)
       throws InvalidObjectException, MetaException {
     rawStore.alterPartitions(dbName, tblName, partValsList, newParts);
-    waitForCacheUpdateMaster();
+    interruptCacheUpdateMaster();
     for (int i=0;i<partValsList.size();i++) {
       List<String> partVals = partValsList.get(i);
       Partition newPart = newParts.get(i);
@@ -1211,7 +1209,7 @@ public class CachedStore implements RawStore, Configurable {
   public void dropPartitions(String dbName, String tblName,
       List<String> partNames) throws MetaException, NoSuchObjectException {
     rawStore.dropPartitions(dbName, tblName, partNames);
-    waitForCacheUpdateMaster();
+    interruptCacheUpdateMaster();
     for (String partName : partNames) {
       List<String> vals = partNameToVals(partName);
       SharedCache.removePartitionFromCache(HiveStringUtils.normalizeIdentifier(dbName),
