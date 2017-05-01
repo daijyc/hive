@@ -445,11 +445,30 @@ public class CachedStore implements RawStore, Configurable {
     return rawStore.dropType(typeName);
   }
 
+  private void validateTableType(Table tbl) {
+    // If the table has property EXTERNAL set, update table type
+    // accordingly
+    String tableType = tbl.getTableType();
+    boolean isExternal = "TRUE".equals(tbl.getParameters().get("EXTERNAL"));
+    if (TableType.MANAGED_TABLE.toString().equals(tableType)) {
+      if (isExternal) {
+        tableType = TableType.EXTERNAL_TABLE.toString();
+      }
+    }
+    if (TableType.EXTERNAL_TABLE.toString().equals(tableType)) {
+      if (!isExternal) {
+        tableType = TableType.MANAGED_TABLE.toString();
+      }
+    }
+    tbl.setTableType(tableType);
+  }
+
   @Override
   public void createTable(Table tbl)
       throws InvalidObjectException, MetaException {
     rawStore.createTable(tbl);
     waitForCacheUpdateMaster();
+    validateTableType(tbl);
     SharedCache.addTableToCache(HiveStringUtils.normalizeIdentifier(tbl.getDbName()),
         HiveStringUtils.normalizeIdentifier(tbl.getTableName()), tbl);
   }
@@ -546,7 +565,7 @@ public class CachedStore implements RawStore, Configurable {
     boolean succ = rawStore.dropPartition(dbName, tableName, part_vals);
     if (succ) {
       waitForCacheUpdateMaster();
-      SharedCache.removePatitionFromCache(HiveStringUtils.normalizeIdentifier(dbName),
+      SharedCache.removePartitionFromCache(HiveStringUtils.normalizeIdentifier(dbName),
           HiveStringUtils.normalizeIdentifier(tableName), part_vals);
     }
     return succ;
@@ -570,6 +589,7 @@ public class CachedStore implements RawStore, Configurable {
       throws InvalidObjectException, MetaException {
     rawStore.alterTable(dbName, tblName, newTable);
     waitForCacheUpdateMaster();
+    validateTableType(newTable);
     SharedCache.alterTableInCache(HiveStringUtils.normalizeIdentifier(dbName),
         HiveStringUtils.normalizeIdentifier(tblName), newTable);
   }
@@ -1059,7 +1079,7 @@ public class CachedStore implements RawStore, Configurable {
         }
       }
       if (!psMatch) {
-        break;
+        continue;
       }
       if (maxParts == -1 || count < maxParts) {
         String partName = Warehouse.makePartName(t.getPartitionKeys(), part.getValues());
@@ -1194,7 +1214,7 @@ public class CachedStore implements RawStore, Configurable {
     waitForCacheUpdateMaster();
     for (String partName : partNames) {
       List<String> vals = partNameToVals(partName);
-      SharedCache.removePatitionFromCache(HiveStringUtils.normalizeIdentifier(dbName),
+      SharedCache.removePartitionFromCache(HiveStringUtils.normalizeIdentifier(dbName),
           HiveStringUtils.normalizeIdentifier(tblName), vals);
     }
   }
@@ -1208,8 +1228,7 @@ public class CachedStore implements RawStore, Configurable {
   @Override
   public List<HiveObjectPrivilege> listPrincipalTableGrantsAll(
       String principalName, PrincipalType principalType) {
-    // TODO Auto-generated method stub
-    return null;
+    return rawStore.listPrincipalTableGrantsAll(principalName, principalType);
   }
 
   @Override

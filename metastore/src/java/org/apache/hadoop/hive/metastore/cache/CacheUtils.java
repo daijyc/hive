@@ -100,13 +100,14 @@ public class CacheUtils {
   }
 
   public static boolean matches(String name, String pattern) {
-    if (pattern == null || pattern.equals("*")) {
-      return true;
+    String[] subpatterns = pattern.trim().split("\\|");
+    for (String subpattern : subpatterns) {
+      subpattern = "(?i)" + subpattern.replaceAll("\\?", ".{1}").replaceAll("\\*", ".*")
+          .replaceAll("\\^", "\\\\^").replaceAll("\\$", "\\\\$");;
+      if (Pattern.matches(subpattern, HiveStringUtils.normalizeIdentifier(name))) {
+        return true;
+      }
     }
-    if (Pattern.matches(pattern, HiveStringUtils.normalizeIdentifier(name))) {
-      return true;
-    } else {
-      return false;
-    }
+    return false;
   }
 }

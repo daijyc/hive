@@ -77,7 +77,7 @@ public class SharedCache {
 
   public static synchronized void alterDatabaseInCache(String dbName, Database newDb) {
     removeDatabaseFromCache(HiveStringUtils.normalizeIdentifier(dbName));
-    addDatabaseToCache(HiveStringUtils.normalizeIdentifier(dbName), newDb.deepCopy());
+    addDatabaseToCache(HiveStringUtils.normalizeIdentifier(newDb.getName()), newDb.deepCopy());
   }
 
   public static synchronized int getCachedDatabaseCount() {
@@ -123,7 +123,18 @@ public class SharedCache {
 
   public static synchronized void alterTableInCache(String dbName, String tblName, Table newTable) {
     removeTableFromCache(dbName, tblName);
-    addTableToCache(dbName, tblName, newTable);
+    addTableToCache(HiveStringUtils.normalizeIdentifier(newTable.getDbName()),
+        HiveStringUtils.normalizeIdentifier(newTable.getTableName()), newTable);
+    if (!dbName.equals(newTable.getDbName()) || !tblName.equals(newTable.getTableName())) {
+      List<Partition> partitions = listCachedPartitions(dbName, tblName, -1);
+      for (Partition part : partitions) {
+        removePartitionFromCache(part.getDbName(), part.getTableName(), part.getValues());
+        part.setDbName(HiveStringUtils.normalizeIdentifier(newTable.getDbName()));
+        part.setTableName(HiveStringUtils.normalizeIdentifier(newTable.getTableName()));
+        addPartitionToCache(HiveStringUtils.normalizeIdentifier(newTable.getDbName()),
+            HiveStringUtils.normalizeIdentifier(newTable.getTableName()), part);
+      }
+    }
   }
 
   public static synchronized int getCachedTableCount() {
@@ -203,7 +214,7 @@ public class SharedCache {
     return partitionCache.containsKey(CacheUtils.buildKey(dbName, tblName, part_vals));
   }
 
-  public static synchronized Partition removePatitionFromCache(String dbName, String tblName, List<String> part_vals) {
+  public static synchronized Partition removePartitionFromCache(String dbName, String tblName, List<String> part_vals) {
     PartitionWrapper wrapper = partitionCache.remove(CacheUtils.buildKey(dbName, tblName, part_vals));
     if (wrapper.getSdHash()!=null) {
       decrSd(wrapper.getSdHash());
@@ -226,8 +237,9 @@ public class SharedCache {
   }
 
   public static synchronized void alterPartitionInCache(String dbName, String tblName, List<String> partVals, Partition newPart) {
-    removePatitionFromCache(dbName, tblName, partVals);
-    addPartitionToCache(dbName, tblName, newPart);
+    removePartitionFromCache(dbName, tblName, partVals);
+    addPartitionToCache(HiveStringUtils.normalizeIdentifier(newPart.getDbName()),
+        HiveStringUtils.normalizeIdentifier(newPart.getTableName()), newPart);
   }
 
   public static synchronized void updatePartitionColumnStatistics(String dbName, String tableName,
