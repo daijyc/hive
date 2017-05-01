@@ -218,7 +218,7 @@ public class TestCachedStore {
     Partition t = SharedCache.getPartitionFromCache("db1", "tbl1", Arrays.asList("201701"));
     Assert.assertEquals(t.getSd().getLocation(), "loc1");
 
-    SharedCache.removePatitionFromCache("db1", "tbl2", Arrays.asList("201701"));
+    SharedCache.removePartitionFromCache("db1", "tbl2", Arrays.asList("201701"));
     Assert.assertEquals(SharedCache.getCachedPartitionCount(), 3);
     Assert.assertEquals(SharedCache.getSdCache().size(), 2);
 
@@ -226,7 +226,7 @@ public class TestCachedStore {
     Assert.assertEquals(SharedCache.getCachedPartitionCount(), 3);
     Assert.assertEquals(SharedCache.getSdCache().size(), 3);
 
-    SharedCache.removePatitionFromCache("db1", "tbl1", Arrays.asList("201702"));
+    SharedCache.removePartitionFromCache("db1", "tbl1", Arrays.asList("201702"));
     Assert.assertEquals(SharedCache.getCachedPartitionCount(), 2);
     Assert.assertEquals(SharedCache.getSdCache().size(), 2);
   }
