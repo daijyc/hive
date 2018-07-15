@@ -69,8 +69,6 @@ select count(*) from sds;
 
 select param_key, param_value from sd_params order by param_key, param_value limit 5;
 
-select sequence_name from sequence_table order by sequence_name limit 5;
-
 select name, slib from serdes order by name, slib limit 5;
 
 select param_key, param_value from serde_params order by param_key, param_value limit 5;

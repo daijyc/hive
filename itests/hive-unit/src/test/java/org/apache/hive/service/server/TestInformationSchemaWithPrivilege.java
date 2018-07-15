@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.MoreObjects;
 import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -581,20 +582,25 @@ public class TestInformationSchemaWithPrivilege {
 
     opHandle = serviceClient.executeStatement(sessHandle, "select * from INFORMATION_SCHEMA.SCHEMATA", confOverlay);
     rowSet = serviceClient.fetchResults(opHandle);
-    Assert.assertTrue(rowSet.numRows() > 2);
+    iter = rowSet.iterator();
+    while (iter.hasNext()) {
+      Object[] cols = iter.next();
+      System.out.println(cols);
+    }
+    Assert.assertTrue(rowSet.numRows() == 5);
 
     opHandle = serviceClient.executeStatement(sessHandle, "select * from INFORMATION_SCHEMA.TABLES", confOverlay);
     rowSet = serviceClient.fetchResults(opHandle);
-    Assert.assertTrue(rowSet.numRows() > 10);
+    Assert.assertTrue(rowSet.numRows() > 50);
 
     opHandle = serviceClient.executeStatement(sessHandle, "select * from INFORMATION_SCHEMA.TABLE_PRIVILEGES",
         confOverlay);
     rowSet = serviceClient.fetchResults(opHandle);
-    Assert.assertEquals(rowSet.numRows(), 7);
+    Assert.assertTrue(rowSet.numRows() > 200);
 
     opHandle = serviceClient.executeStatement(sessHandle, "select * from INFORMATION_SCHEMA.COLUMNS", confOverlay);
     rowSet = serviceClient.fetchResults(opHandle);
-    Assert.assertTrue(rowSet.numRows() > 10);
+    Assert.assertTrue(rowSet.numRows() > 350);
 
     opHandle = serviceClient.executeStatement(sessHandle, "select * from INFORMATION_SCHEMA.COLUMN_PRIVILEGES",
         confOverlay);
